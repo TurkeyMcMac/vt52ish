@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 			"Usage: %s cmd [arg...]\n", argv[0] ? argv[0] : "");
 		goto end;
 	}
-	int pt_master_fd = argc > 1 ? pty_start(argv + 1) : -1;
+	int pt_master_fd = pty_start(argv + 1);
 	if (pt_master_fd < 0) {
 		fprintf(stderr, "%s: Unable to initialize pseudo-terminal "
 			"master end: %s\n", argv[0], strerror(errno));
