@@ -74,11 +74,11 @@ void parser_process_byte(struct parser *p, int byte)
 				} else {
 					waddstr(p->win, "\b \b");
 				}
-				p->line_full = false;
 			} else if (y > 0) {
 				mvwaddch(p->win, y - 1, n_cols - 1, ' ');
 				wmove(p->win, y - 1, n_cols - 1);
 			}
+			p->line_full = false;
 			break;
 		case '\a':
 			++p->bells_pending;
