@@ -12,21 +12,50 @@
 #include <string.h>
 #include <unistd.h>
 
+#define VERSION_FMT "%s version " VERSION "\n"
+
+#define USAGE_FMT "Usage: %s [{-h | -v | [--] command [args...]}]\n"
+
+#define HELP_FMT \
+	USAGE_FMT \
+	"\n" \
+	"Options:\n" \
+	"  -h  Print this help and exit.\n" \
+	"  -v  Print the program version and exit.\n"
+
+
 int main(int argc, char *argv[])
 {
-	int ret = EXIT_FAILURE;
-
-	if (argc < 2) {
-		fprintf(stderr,
-			"Usage: %s cmd [arg...]\n", argv[0] ? argv[0] : "");
-		goto end;
+	const char *progname = argv[0] ? argv[0] : "";
+	bool posixly_correct_was_set = getenv("POSIXLY_CORRECT");
+	// POSIXLY_CORRECT prevents the slave's options from being detected.
+	if (!posixly_correct_was_set) setenv("POSIXLY_CORRECT", "", 1);
+	for (int opt; (opt = getopt(argc, argv, "hv")) >= 0; ) {
+		switch (opt) {
+		case 'h':
+			printf(HELP_FMT, progname);
+			return EXIT_SUCCESS;
+		case 'v':
+			printf(VERSION_FMT, progname);
+			return EXIT_SUCCESS;
+		case '?':
+			fprintf(stderr, USAGE_FMT, progname);
+			return EXIT_FAILURE;
+		}
 	}
-	// The non-initial arguments are passed to the slave.
-	int pt_master_fd = pty_start(argv + 1);
+	if (!argv[optind]) {
+		fprintf(stderr, USAGE_FMT, progname);
+		return EXIT_FAILURE;
+	}
+
+	// Avoid messing with the slave's environment.
+	if (!posixly_correct_was_set) unsetenv("POSIXLY_CORRECT");
+	// The leftover arguments are passed to the slave.
+	int pt_master_fd = pty_start(argv + optind);
 	if (pt_master_fd < 0) {
 		fprintf(stderr, "%s: Unable to initialize pseudo-terminal "
-			"master end: %s\n", argv[0], strerror(errno));
-		goto end;
+			"master end: %s\n", progname, strerror(errno));
+		return EXIT_FAILURE;
 	}
 
 	initscr();
@@ -37,14 +66,17 @@ int main(int argc, char *argv[])
 
 	struct parser p;
 	if (parser_init(&p, newwin(N_LINES, N_COLS, 0, 0)) < 0) {
-		fprintf(stderr, "%s: Unable to initialize parser\n", argv[0]);
-		goto end_curses;
+		endwin();
+		fprintf(stderr, "%s: Unable to initialize parser\n", progname);
+		return EXIT_FAILURE;
 	}
+
 	struct buffer send;
 	if (buffer_init(&send, 8) < 0) {
+		endwin();
 		fprintf(stderr,
-			"%s: Unable to initialize input buffer\n", argv[0]);
-		goto end_curses;
+			"%s: Unable to initialize input buffer\n", progname);
+		return EXIT_FAILURE;
 	}
 
 	for (;;) {
@@ -92,10 +124,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-	ret = EXIT_SUCCESS;
 
-end_curses:
 	endwin();
-end:
-	return ret;
+	return EXIT_SUCCESS;
 }
