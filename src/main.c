@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
 		goto end_curses;
 	}
 	struct buffer send;
-	buffer_init(&send, 8);
-	if (parser_init(&p, newwin(N_LINES, N_COLS, 0, 0)) < 0) {
+	if (buffer_init(&send, 8) < 0) {
 		fprintf(stderr,
 			"%s: Unable to initialize input buffer\n", argv[0]);
 		goto end_curses;
