@@ -5,6 +5,4 @@
 
 #define N_COLS 80
 
-#define TAB_SIZE 8
-
 #endif /* CONFIG_H_ */

@@ -1,5 +1,4 @@
 #include "parser.h"
-#include "config.h"
 #include "util.h"
 #include <stdlib.h>
 
@@ -61,8 +60,8 @@ void parser_process_byte(struct parser *p, int byte)
 				}
 				p->line_full = false;
 			} else {
-				p->line_full = n_cols % TAB_SIZE == 0
-					&& x == n_cols - TAB_SIZE;
+				p->line_full = n_cols % 8 == 0
+					&& x == n_cols - 8;
 			}
 			waddch(p->win, '\t');
 			if (p->line_full) wmove(p->win, y, n_cols - 1);
