@@ -20,6 +20,7 @@ int key_translate(int curses_key, struct buffer *buf)
 	case KEY_LEFT:
 		return buffer_append_str(buf, "\033D");
 	default: 
+		// This seems to include characters with the CTRL modifier.
 		if (curses_key >= 0 && curses_key < 128)
 			return buffer_append_byte(buf, curses_key);
 		break;
