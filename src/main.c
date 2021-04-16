@@ -6,7 +6,6 @@
 #include "util.h"
 #include <curses.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,9 +22,7 @@ int main(int argc, char *argv[])
 		goto end;
 	}
 	int pt_master_fd = argc > 1 ? pty_start(argv + 1) : -1;
-	int flags = fcntl(pt_master_fd, F_GETFL);
-	int set = fcntl(pt_master_fd, F_SETFL, flags | O_NONBLOCK);
-	if (pt_master_fd < 0 || flags < 0 || set < 0) {
+	if (pt_master_fd < 0) {
 		fprintf(stderr, "%s: Unable to initialize pseudo-terminal "
 			"master end: %s\n", argv[0], strerror(errno));
 		goto end;
@@ -71,7 +68,8 @@ int main(int argc, char *argv[])
 			key_translate(key, &send);
 		}
 		if (send.len > 0) {
-			ssize_t w = write(pt_master_fd, send.data, send.len);
+			ssize_t w = write_timeout(pt_master_fd,
+				send.data, send.len, 1);
 			if ((size_t)w == send.len) {
 				send.len = 0;
 			} else if (w > 0 && (size_t)w < send.len) {

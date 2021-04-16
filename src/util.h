@@ -12,4 +12,6 @@
 
 ssize_t read_timeout(int fd, void *buf, size_t size, int timeout);
 
+ssize_t write_timeout(int fd, const void *buf, size_t size, int timeout);
+
 #endif /* UTIL_H_ */
