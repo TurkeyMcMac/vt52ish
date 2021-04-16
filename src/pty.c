@@ -67,10 +67,11 @@ static void do_slave(int pt_master_fd, char *argv[])
 error:
 	{
 		char *str = "Slave error: ";
-		(void)write(STDERR_FILENO, str, strlen(str));
+		ssize_t w = write(STDERR_FILENO, str, strlen(str));
 		str = strerror(errno);
-		(void)write(STDERR_FILENO, str, strlen(str));
-		(void)write(STDERR_FILENO, "\n", 1);
+		w += write(STDERR_FILENO, str, strlen(str));
+		w += write(STDERR_FILENO, "\n", 1);
+		(void)w;
 	}
 	exit(EXIT_FAILURE);
 }
