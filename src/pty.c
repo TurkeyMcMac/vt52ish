@@ -5,7 +5,30 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
+
+static int set_up_pty(int pt_slave_fd)
+{
+	struct termios t;
+	if (tcgetattr(pt_slave_fd, &t) < 0) return -1;
+	// XXX I have no idea what I'm doing here. I copied most of this from
+	// an existing tty configuration.
+	cfsetispeed(&t, B9600);
+	cfsetospeed(&t, B9600);
+	t.c_iflag = ICRNL | IXON;
+	t.c_oflag = OPOST | ONLCR | NL0 | CR0 | TAB0 | BS0 | VT0 | FF0;
+	t.c_cflag = CREAD | CS8;
+	t.c_lflag = ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOKE;
+#ifdef ECHOCTL
+	t.c_lflag |= ECHOCTL;
+#endif
+	if (tcsetattr(pt_slave_fd, TCSANOW, &t) < 0) return -1;
+	struct winsize ws = { .ws_row = N_LINES, .ws_col = N_COLS };
+	if (ioctl(pt_slave_fd, TIOCSWINSZ, &ws) < 0) return -1;
+	return 0;
+}
 
 static void do_slave(int pt_master_fd, char *argv[])
 {
@@ -18,16 +41,22 @@ static void do_slave(int pt_master_fd, char *argv[])
 	 || dup2(pt_slave_fd, STDOUT_FILENO) < 0
 	 || dup2(pt_slave_fd, STDERR_FILENO) < 0)
 		goto error;
-	(void)close(pt_master_fd);
+	if (setsid() == (pid_t)-1) goto error;
+	if (set_up_pty(pt_slave_fd) < 0) goto error;
+	if (ioctl(pt_slave_fd, TIOCSCTTY, 0) < 0) goto error;
 	if (setenv("TERM", "vt52", 1) < 0
 	 || setenv("LINES", STRINGIFY(N_LINES), 1) < 0
-	 || setenv("COLUMNS", STRINGIFY(N_COLUMNS), 1) < 0)
+	 || setenv("COLUMNS", STRINGIFY(N_COLS), 1) < 0)
 		goto error;
+	(void)close(pt_slave_fd);
 	execvp(argv[0], argv);
 error:
 	{
-		char *error_str = strerror(errno);
-		(void)write(STDERR_FILENO, error_str, strlen(error_str));
+		char *str = "Slave error: ";
+		(void)write(STDERR_FILENO, str, strlen(str));
+		str = strerror(errno);
+		(void)write(STDERR_FILENO, str, strlen(str));
+		(void)write(STDERR_FILENO, "\n", 1);
 	}
 	exit(EXIT_FAILURE);
 }

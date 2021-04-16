@@ -4,14 +4,22 @@
 
 int parser_init(struct parser *p, WINDOW *win)
 {
-	if (!win || scrollok(win, TRUE) != OK) return -1;
+	if (!win || scrollok(win, FALSE) != OK) return -1;
 	p->idents_pending = 0;
-	p->alt_keypad = false;
+	p->bells_pending = 0;
 	p->win = win;
 	p->alt_charset = false;
+	p->line_full = false;
 	p->cmd_state = CS_NONE;
 	p->cup_row = 0;
 	return 0;
+}
+
+static void do_scroll(WINDOW *win, int amount)
+{
+	scrollok(win, TRUE);
+	wscrl(win, amount);
+	scrollok(win, FALSE);
 }
 
 void parser_process_byte(struct parser *p, int byte)
@@ -23,24 +31,101 @@ void parser_process_byte(struct parser *p, int byte)
 	switch (p->cmd_state) {
 	case CS_NONE:
 		switch (byte) {
-		case ESC:
+		case '\033':
 			p->cmd_state = CS_HAS_START;
 			break;
 		case '\n':
-			// Should this clear to eol?
+		case '\v':
+		case '\f':
+			// IDK if a linefeed should clear to eol.
 			if (y < n_lines - 1) {
 				wmove(p->win, y + 1, x);
 			} else {
-				wscrl(p->win, 1);
+				do_scroll(p->win, 1);
 			}
+			p->line_full = false;
 			break;
 		case '\r':
 			wmove(p->win, y, 0);
+			p->line_full = false;
+			break;
+		case '\t':
+			if (p->line_full) {
+				if (y == n_lines - 1) {
+					do_scroll(p->win, 1);
+					wmove(p->win, y, 0);
+				} else {
+					wmove(p->win, y + 1, 0);
+				}
+				p->line_full = false;
+			} else {
+				p->line_full = n_cols % TABSIZE == 0
+					&& x == n_cols - TABSIZE;
+			}
+			waddch(p->win, '\t');
+			if (p->line_full) wmove(p->win, y, n_cols - 1);
+			break;
+		case '\b':
+			if (x > 0) {
+				if (p->line_full) {
+					waddch(p->win, ' ');
+					wmove(p->win, y, x);
+				} else {
+					waddstr(p->win, "\b \b");
+				}
+				p->line_full = false;
+			} else if (y > 0) {
+				mvwaddch(p->win, y - 1, n_cols - 1, ' ');
+				wmove(p->win, y - 1, n_cols - 1);
+			}
+			break;
+		case '\a':
+			++p->bells_pending;
 			break;
 		default:
-			if (y == n_lines - 1 && x == n_cols - 1)
-				wscrl(p->win, 1);
-			waddch(p->win, byte);
+			if (byte > 31 && byte < 127) {
+				if (p->line_full) {
+					if (y == n_lines - 1) {
+						do_scroll(p->win, 1);
+						wmove(p->win, y, 0);
+					} else {
+						wmove(p->win, y + 1, 0);
+					}
+					p->line_full = false;
+				} else {
+					p->line_full = x == n_cols - 1;
+				}
+				chtype ch = byte;
+				if (p->alt_charset) {
+					// Taken from `infocmp vt52`.
+					switch (ch) {
+					case 'h': ch = ACS_RARROW; break;
+					case 'k': ch = ACS_DARROW; break;
+					case 'a': ch = ACS_BLOCK; break;
+					case 'f': ch = ACS_DEGREE; break;
+					case 'g': ch = ACS_PLMINUS; break;
+					case 'l': ch = ACS_S1; break;
+					case 'n':
+#ifdef ACS_S3
+						  ch = ACS_S3;
+#else
+						  ch = ACS_HLINE;
+#endif
+						  break;
+					case 'p': ch = ACS_HLINE; break;
+					case 'r':
+#ifdef ACS_S7
+						  ch = ACS_S7;
+#else
+						  ch = ACS_HLINE;
+#endif
+						  break;
+					case 's': ch = ACS_S9; break;
+					}
+				}
+				waddch(p->win, ch);
+				if (p->line_full) wmove(p->win, y, x);
+			}
 			break;
 		}
 		break;
@@ -48,16 +133,28 @@ void parser_process_byte(struct parser *p, int byte)
 		p->cmd_state = CS_NONE;
 		switch (byte) {
 		case 'A':
-			if (y > 0) wmove(p->win, y - 1, x);
+			if (y > 0) {
+				wmove(p->win, y - 1, x);
+				p->line_full = false;
+			}
 			break;
 		case 'B':
-			if (y < n_lines - 1) wmove(p->win, y + 1, x);
+			if (y < n_lines - 1) {
+				wmove(p->win, y + 1, x);
+				p->line_full = false;
+			}
 			break;
 		case 'C':
-			if (x < n_cols - 1) wmove(p->win, y, x + 1);
+			if (x < n_cols - 1) {
+				wmove(p->win, y, x + 1);
+				p->line_full = false;
+			}
 			break;
 		case 'D':
-			if (x > 0) wmove(p->win, y, x - 1);
+			if (x > 0) {
+				wmove(p->win, y, x - 1);
+				p->line_full = false;
+			}
 			break;
 		case 'F':
 			p->alt_charset = true;
@@ -67,14 +164,16 @@ void parser_process_byte(struct parser *p, int byte)
 			break;
 		case 'H':
 			wmove(p->win, 0, 0);
+			p->line_full = false;
 			break;
 		case 'I':
 			if (y > 0) {
 				// Is insertion needed here?
 				wmove(p->win, y - 1, x);
 			} else {
-				wscrl(p->win, -1);
+				do_scroll(p->win, -1);
 			}
+			p->line_full = false;
 			break;
 		case 'J':
 			wclrtobot(p->win);
@@ -91,6 +190,7 @@ void parser_process_byte(struct parser *p, int byte)
 			}
 			wmove(p->win, y, 0);
 			wclrtoeol(p->win);
+			p->line_full = false;
 			break;
 		case 'M':
 			for (int new_y = y; new_y < n_lines - 1; ++new_y) {
@@ -102,6 +202,7 @@ void parser_process_byte(struct parser *p, int byte)
 			wmove(p->win, n_lines - 1, 0);
 			wclrtoeol(p->win);
 			wmove(p->win, y, 0);
+			p->line_full = false;
 			break;
 		case 'Y':
 			p->cmd_state = CS_HAS_CUP_START;
@@ -110,10 +211,8 @@ void parser_process_byte(struct parser *p, int byte)
 			++p->idents_pending;
 			break;
 		case '=':
-			p->alt_keypad = true;
-			break;
 		case '>':
-			p->alt_keypad = false;
+			// XXX Alternate keypad is unimplemented.
 			break;
 		}
 		break;
@@ -126,6 +225,7 @@ void parser_process_byte(struct parser *p, int byte)
 		x = CLAMP(byte - 31, 1, n_cols) - 1;
 		wmove(p->win, y, x);
 		p->cmd_state = CS_NONE;
+		p->line_full = false;
 		break;
 	}
 }

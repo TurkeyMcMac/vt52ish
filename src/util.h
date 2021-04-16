@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#define ESC 033
-
 #define CLAMP(val, min, max) \
 	((val) < (min) ? (min) : (val) > (max) ? (max) : (val))
 

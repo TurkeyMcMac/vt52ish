@@ -5,9 +5,10 @@
 
 struct parser {
 	int idents_pending;
-	bool alt_keypad;
-	bool alt_charset;
+	int bells_pending;
 	WINDOW *win;
+	bool alt_charset;
+	bool line_full;
 	enum cmd_state {
 		CS_NONE,
 		CS_HAS_START,
