@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	for (;;) {
 		uint8_t byte;
 		// Read is on a timeout to keep keyboard input responsive.
-		ssize_t r = read_timeout(pt_master_fd, &byte, 1, 6);
+		ssize_t r = read_timeout(pt_master_fd, &byte, 1, READ_TIMEOUT);
 		if (r > 0) {
 			// A byte was received.
 			parser_process_byte(&p, byte);
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 			// is full. This is done without O_NONBLOCK since that
 			// doesn't work on Mac OS.
 			ssize_t w = write_timeout(pt_master_fd,
-				send.data, send.len, 1);
+				send.data, send.len, WRITE_TIMEOUT);
 			if ((size_t)w == send.len) {
 				// All the data was sent.
 				send.len = 0;

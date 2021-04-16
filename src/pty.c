@@ -16,8 +16,8 @@ static int set_up_pty(int pt_slave_fd)
 	if (tcgetattr(pt_slave_fd, &t) < 0) return -1;
 	// XXX I'm not sure what I'm doing here. I copied most of this from an
 	// existing tty configuration.
-	cfsetispeed(&t, B9600);
-	cfsetospeed(&t, B9600);
+	cfsetispeed(&t, BAUD_RATE);
+	cfsetospeed(&t, BAUD_RATE);
 	t.c_iflag = ICRNL;
 	t.c_oflag = OPOST | ONLCR | NL0 | CR0 | TAB0 | BS0 | VT0 | FF0;
 	t.c_cflag = CREAD | CS8;
