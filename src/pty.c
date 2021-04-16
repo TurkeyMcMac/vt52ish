@@ -20,7 +20,10 @@ static int set_up_pty(int pt_slave_fd)
 	t.c_iflag = ICRNL;
 	t.c_oflag = OPOST | ONLCR | NL0 | CR0 | TAB0 | BS0 | VT0 | FF0;
 	t.c_cflag = CREAD | CS8;
-	t.c_lflag = ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOKE;
+	t.c_lflag = ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK;
+#ifdef ECHOKE
+	t.c_lflag |= ECHOKE;
+#endif
 #ifdef ECHOCTL
 	t.c_lflag |= ECHOCTL;
 #endif
