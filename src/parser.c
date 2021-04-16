@@ -100,13 +100,15 @@ void parser_process_byte(struct parser *p, int byte)
 				if (p->alt_charset) {
 					// Taken from `infocmp vt52`.
 					switch (ch) {
-					case 'h': ch = ACS_RARROW; break;
-					case 'k': ch = ACS_DARROW; break;
 					case 'a': ch = ACS_BLOCK; break;
 					case 'f': ch = ACS_DEGREE; break;
 					case 'g': ch = ACS_PLMINUS; break;
+					case 'h': ch = ACS_RARROW; break;
+					case 'k': ch = ACS_DARROW; break;
 					case 'l': ch = ACS_S1; break;
+					case 'm': ch = ACS_S1; break;
 					case 'n':
+					case 'o':
 #ifdef ACS_S3
 						  ch = ACS_S3;
 #else
@@ -114,6 +116,7 @@ void parser_process_byte(struct parser *p, int byte)
 #endif
 						  break;
 					case 'p': ch = ACS_HLINE; break;
+					case 'q': ch = ACS_HLINE; break;
 					case 'r':
 #ifdef ACS_S7
 						  ch = ACS_S7;
