@@ -33,6 +33,7 @@ static int set_up_pty(int pt_slave_fd)
 
 static void do_slave(int pt_master_fd, char *argv[])
 {
+	if (setsid() == (pid_t)-1) goto error;
 	if (grantpt(pt_master_fd) < 0 || unlockpt(pt_master_fd) < 0) goto error;
 	char *pt_slave_path = ptsname(pt_master_fd);
 	(void)close(pt_master_fd);
@@ -42,7 +43,6 @@ static void do_slave(int pt_master_fd, char *argv[])
 	 || dup2(pt_slave_fd, STDOUT_FILENO) < 0
 	 || dup2(pt_slave_fd, STDERR_FILENO) < 0)
 		goto error;
-	if (setsid() == (pid_t)-1) goto error;
 	if (set_up_pty(pt_slave_fd) < 0) goto error;
 	if (ioctl(pt_slave_fd, TIOCSCTTY, 0) < 0) goto error;
 	if (setenv("TERM", "vt52", 1) < 0
