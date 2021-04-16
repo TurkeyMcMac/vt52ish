@@ -13,17 +13,18 @@ static int set_up_pty(int pt_slave_fd)
 {
 	struct termios t;
 	if (tcgetattr(pt_slave_fd, &t) < 0) return -1;
-	// XXX I have no idea what I'm doing here. I copied most of this from
-	// an existing tty configuration.
+	// XXX I'm not sure what I'm doing here. I copied most of this from an
+	// existing tty configuration.
 	cfsetispeed(&t, B9600);
 	cfsetospeed(&t, B9600);
-	t.c_iflag = ICRNL | IXON;
+	t.c_iflag = ICRNL;
 	t.c_oflag = OPOST | ONLCR | NL0 | CR0 | TAB0 | BS0 | VT0 | FF0;
 	t.c_cflag = CREAD | CS8;
 	t.c_lflag = ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOKE;
 #ifdef ECHOCTL
 	t.c_lflag |= ECHOCTL;
 #endif
+	t.c_cc[VERASE] = '\b';
 	if (tcsetattr(pt_slave_fd, TCSANOW, &t) < 0) return -1;
 	struct winsize ws = { .ws_row = N_LINES, .ws_col = N_COLS };
 	if (ioctl(pt_slave_fd, TIOCSWINSZ, &ws) < 0) return -1;

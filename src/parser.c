@@ -4,7 +4,8 @@
 
 int parser_init(struct parser *p, WINDOW *win)
 {
-	if (!win || scrollok(win, FALSE) != OK) return -1;
+	if (!win || scrollok(win, FALSE) != OK || leaveok(win, FALSE) != OK)
+		return -1;
 	p->idents_pending = 0;
 	p->bells_pending = 0;
 	p->win = win;

@@ -8,6 +8,7 @@ int key_translate(int curses_key, struct buffer *buf)
 	case KEY_ENTER:
 		return buffer_append_byte(buf, '\r');
 	case KEY_BACKSPACE:
+		return buffer_append_byte(buf, '\b');
 	case KEY_DC:
 		return buffer_append_byte(buf, '\177');
 	case KEY_UP:
