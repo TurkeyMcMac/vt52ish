@@ -63,11 +63,18 @@ int main(int argc, char *argv[])
 	initscr();
 	raw();
 	noecho();
-	timeout(0);
-	keypad(stdscr, TRUE);
+
+	WINDOW *termwin = newwin(N_LINES, N_COLS, 0, 0);
+	if (!termwin) {
+		endwin();
+		fprintf(stderr, "%s: Unable to initialize window\n", progname);
+		return EXIT_FAILURE;
+	}
+	keypad(termwin, TRUE);
+	wtimeout(termwin, 0);
 
 	struct parser p;
-	if (parser_init(&p, newwin(N_LINES, N_COLS, 0, 0)) < 0) {
+	if (parser_init(&p, termwin) < 0) {
 		endwin();
 		fprintf(stderr, "%s: Unable to initialize parser\n", progname);
 		return EXIT_FAILURE;
@@ -88,7 +95,6 @@ int main(int argc, char *argv[])
 		if (r > 0) {
 			// A byte was received.
 			parser_process_byte(&p, byte);
-			wrefresh(p.win);
 			// Send any requested identifier sequences.
 			while (p.idents_pending > 0) {
 				// This string identifies the VT52.
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
 		}
 		// Prepare all the pending keys for sending.
 		int key;
-		while ((key = getch()) != ERR) {
+		while ((key = wgetch(termwin)) != ERR) {
 			key_translate(key, &send);
 		}
 		if (send.len > 0) {
