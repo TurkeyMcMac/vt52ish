@@ -9,9 +9,7 @@ ssize_t read_timeout(int fd, void *buf, size_t size, int timeout)
 		.fd = fd,
 		.events = POLLIN,
 	};
-	int n_events;
-	while ((n_events = poll(&pollfd, 1, timeout)) < 0 && errno == EINTR)
-		;
+	int n_events = poll(&pollfd, 1, timeout);
 	if (n_events == 1) {
 		if (pollfd.revents & POLLIN) return read(fd, buf, size);
 		if (pollfd.revents & POLLHUP) return 0;
@@ -30,9 +28,7 @@ ssize_t write_timeout(int fd, const void *buf, size_t size, int timeout)
 		.fd = fd,
 		.events = POLLOUT,
 	};
-	int n_events;
-	while ((n_events = poll(&pollfd, 1, timeout)) < 0 && errno == EINTR)
-		;
+	int n_events = poll(&pollfd, 1, timeout);
 	if (n_events == 1) {
 		if (pollfd.revents & POLLOUT) return write(fd, buf, size);
 		if (pollfd.revents & POLLHUP) return 0;
