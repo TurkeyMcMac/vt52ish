@@ -14,8 +14,4 @@
 // timeout will make keyboard input less responsive.
 #define READ_TIMEOUT 6
 
-// The maximum timeout for writing keyboard input to the slave. A higher
-// timeout will make displaying characters less responsive.
-#define WRITE_TIMEOUT 1
-
 #endif /* CONFIG_H_ */

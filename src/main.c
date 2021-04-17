@@ -108,12 +108,10 @@ int main(int argc, char *argv[])
 			key_translate(key, &send);
 		}
 		if (send.len > 0) {
-			// The write is on a timeout so the emulator can keep
-			// responding to slave output even if the input buffer
-			// is full. This is done without O_NONBLOCK since that
-			// doesn't work on Mac OS.
+			// This strategy of nonblocking is used instead of
+			// O_NONBLOCK since the latter doesn't work on Mac OS.
 			ssize_t w = write_timeout(pt_master_fd,
-				send.data, send.len, WRITE_TIMEOUT);
+				send.data, send.len, 0);
 			if ((size_t)w == send.len) {
 				// All the data was sent.
 				send.len = 0;
