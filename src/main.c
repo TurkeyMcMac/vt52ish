@@ -14,10 +14,12 @@
 
 #define VERSION_FMT "%s version " VERSION "\n"
 
-#define USAGE_FMT "Usage: %s [{-h | -v | [--] command [args...]}]\n"
+#define USAGE_FMT "Usage: %s {-h | -v | [--] command [args...]}\n"
 
 #define HELP_FMT \
 	USAGE_FMT \
+	"\n" \
+	"Runs the command in a TUI VT52-based terminal emulator.\n" \
 	"\n" \
 	"Options:\n" \
 	"  -h  Print this help and exit.\n" \

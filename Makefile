@@ -1,5 +1,5 @@
 exe = vt52ish
-version = 0.0.3
+version = 0.0.4
 CPPFLAGS = -DVERSION='"$(version)"' -D_XOPEN_SOURCE=600 -D_DEFAULT_SOURCE
 CFLAGS = -std=c99 -Wall -Wextra -pedantic
 LDLIBS = -lcurses
