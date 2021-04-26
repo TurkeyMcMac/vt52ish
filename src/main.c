@@ -98,8 +98,11 @@ int main(int argc, char *argv[])
 			// Send any requested identifier sequences.
 			while (p.idents_pending > 0) {
 				// This string identifies the VT52.
-				buffer_append_str(&send, "\033/K");
-				--p.idents_pending;
+				if (buffer_append_str(&send, "\033/K") >= 0) {
+					--p.idents_pending;
+				} else {
+					break;
+				}
 			}
 			// Play any requested bells.
 			while (p.bells_pending > 0) {
