@@ -86,10 +86,6 @@ void parser_process_byte(struct parser *p, int byte)
 					// erased.
 					waddstr(p->win, "\b \b");
 				}
-			} else if (y > 0) {
-				// Backspace wraps around to the line above.
-				mvwaddch(p->win, y - 1, n_cols - 1, ' ');
-				wmove(p->win, y - 1, n_cols - 1);
 			}
 			p->line_full = false;
 			break;
